@@ -1,110 +1,86 @@
-# Batalha Naval A3 — Versão 3 (artes e animações)
+# Batalha Naval A3 — V4 (Python + Pygame)
 
-Jogo clássico 10×10 para **2 jogadores no mesmo computador**, em Python + Pygame.
+Projeto acadêmico de Batalha Naval, **2 jogadores no mesmo computador**. Interface criada a partir da arte do monitor e dos quatro personagens fornecidos pela turma. O motor (`game.py`) continua independente da interface (`main.py`).
 
 ## Executar no Windows
-
-No PowerShell, dentro da pasta extraída:
 
 ```powershell
 py -m pip install -r requirements.txt
 py main.py
 ```
 
-## Controles
+Ou abra `iniciar.bat` após instalar o Pygame. Para sair, ESC.
 
-- Clique na grade esquerda para colocar um navio.
-- `R`: mudar orientação; `A`: distribuição automática; `Enter`: confirmar/trocar turno.
-- Clique na grade direita para atacar.
-- `N`: nova partida ao fim; `Esc`: sair.
+## Fluxo da partida
 
-## Onde a turma coloca os arquivos
+1. Jogador 1 escolhe um dos quatro personagens; a tela de troca protege a escolha do próximo jogador.
+2. Jogador 2 escolhe outro personagem (não é permitido repetir).
+3. Cada jogador posiciona **cinco navios** no tabuleiro 10×10. Clique para posicionar; **R** alterna horizontal/vertical; **A** distribui automaticamente; **Enter** confirma.
+4. Na batalha, clique no mar do adversário para disparar; a tela registra acerto ou erro e **Enter** troca o jogador, exibindo antes uma tela de privacidade.
+5. Vence quem atingir todas as casas dos navios adversários. **N** reinicia a partida.
 
-### Barcos (PNG com transparência)
-
-- `assets/navios/porta_avioes.png`
-- `assets/navios/encouracado.png`
-- `assets/navios/cruzador.png`
-- `assets/navios/submarino.png`
-- `assets/navios/patrulha.png`
-
-Tamanho sugerido: **128×96 px ou maior**. As imagens são ajustadas automaticamente para 38×28 px por casa. **Importante:** nesta versão a imagem do navio aparece em *cada célula ocupada*, e não uma imagem única atravessando várias células. Para barcos grandes desenhados por inteiro, será preciso mudar a renderização depois.
-
-Fallback opcional: `assets/navios/navio.png` (usado para qualquer tipo que ainda não tenha sua arte específica).
-
-### Avatares (PNG com transparência)
-
-- `assets/avatares/jogador1.png`
-- `assets/avatares/jogador2.png`
-
-Tamanho sugerido: 256×256 px, com o rosto bem centralizado.
-
-### Animações por quadros (PNG com transparência)
-
-Coloque arquivos **001.png, 002.png, 003.png...** dentro da pasta específica:
-
-- `assets/efeitos/agua/` — tiro na água.
-- `assets/efeitos/acertou/` — tiro que acertou navio.
-- `assets/efeitos/afundou/` — navio afundado.
-- `assets/avatares/jogador1_atingido/` — reação quando J1 leva tiro.
-- `assets/avatares/jogador2_atingido/` — reação quando J2 leva tiro.
-- `assets/avatares/jogador1_derrota/` — reação de derrota do J1.
-- `assets/avatares/jogador2_derrota/` — reação de derrota do J2.
-
-Exemplo:
+## Estrutura dos arquivos de arte
 
 ```text
 assets/
+  interface/
+    fundo_principal.jpg           # fundo do monitor, 800x600
+  personagens/
+    personagem1.jpg               # avatars enviados pela turma
+    personagem2.jpg
+    personagem3.jpg
+    personagem4.jpg
+    personagem1_atingido/         # quadros opcionais 001.png, 002.png...
+    personagem1_derrota/          # quadros opcionais 001.png, 002.png...
+    personagem2_atingido/
+    personagem2_derrota/
+    personagem3_atingido/
+    personagem3_derrota/
+    personagem4_atingido/
+    personagem4_derrota/
   navios/
     porta_avioes.png
     encouracado.png
     cruzador.png
     submarino.png
     patrulha.png
-  avatares/
-    jogador1.png
-    jogador2.png
-    jogador1_atingido/
-      001.png
-      002.png
-      003.png
-    jogador2_atingido/
-      001.png
-      002.png
-      003.png
-    jogador1_derrota/
-      001.png
-      002.png
-      003.png
-    jogador2_derrota/
-      001.png
-      002.png
-      003.png
   efeitos/
-    agua/
-      001.png
-      002.png
+    agua/                         # 001.png, 002.png...
     acertou/
-      001.png
-      002.png
     afundou/
-      001.png
-      002.png
 ```
 
-Quadros do tiro são exibidos a 90 ms por quadro, sem repetir, por até 1,3 segundo. A reação do personagem atingido usa 140 ms por quadro por até 2,2 segundos; a derrota mostra o último quadro ao terminar. Para animações longas, ajustar esses valores em `main.py`.
+### Orientações para a turma de design
 
-As imagens são carregadas **ao iniciar o jogo**: feche e abra novamente após substituir as artes. Se não encontrar uma imagem, a partida continua com desenho simples, e a animação ausente não será exibida. Formatos GIF animado, MP4 e spritesheets ainda não são suportados diretamente: exporte como PNGs numerados.
+- **Retratos:** JPG ou PNG funcionam; por padrão foram incorporados os quatro JPG já enviados.
+- **Navios:** PNG transparente, preferencialmente arte que funcione dentro de cada célula. A V4 ainda desenha os navios por casa; **não mostra o desenho de um barco único atravessando 2–5 células**.
+- **Animações:** coloquem quadros PNG em ordem crescente (`001.png`, `002.png`, ...). A duração padrão de cada quadro é 95 ms nos tiros e 160 ms nas reações; é ajustável no código.
+- Se uma arte estiver ausente, o jogo continua usando efeitos de fallback.
+- O retrato de reação do atingido aparece **no quadrado preto** durante o resultado do ataque. Sem quadros de reação específicos, aparece o retrato normal.
+- A tela do computador no fundo é usada para um único tabuleiro por vez. O branco foi mantido sob o painel do jogo.
 
-## Arquitetura
+## Arquivos importantes
 
-- `game.py`: regras, posições, acertos e vitória.
-- `main.py`: interface, eventos e animações.
-- `assets.py`: leitura de imagens e frames.
+- `game.py`: regras, navios, colisões e estado dos tiros.
+- `main.py`: renderização, seleção de personagem, turnos, animações e entrada.
+- `assets.py`: carregamento dos arquivos PNG/JPG e sequências de quadros.
 
-## Limitações
+## GitHub
 
-- Tabuleiro 2D, não 3D em perspectiva como a imagem de referência.
-- Barcos estáticos, conforme regras clássicas; efeitos animados.
-- Uma cópia de cada arte por célula de navio, não a silhueta completa de cada barco.
-- Jogadores precisam passar o computador no fim do turno; a tela de transição evita mostrar as posições antes da troca.
+Na pasta do projeto:
+
+```powershell
+git add .
+git commit -m "V4: fundo da turma e selecao de personagens"
+git push
+```
+
+O código foi criado como **atualização**, mas este pacote não realiza o envio ao seu GitHub automaticamente. Não sobrescreva modificações feitas por outros colegas sem comparar.
+
+## V5 — janela responsiva e avatar preenchendo quadrado
+
+- A V4 abria obrigatoriamente em 1200×900. A V5 mede a resolução do monitor principal e inicia em tamanho compatível com a tela disponível, com margem para barra de tarefas e bordas.
+- Janela redimensionável pelo mouse. A arte do jogo continua em 800×600 lógicos, com proporção 4:3 preservada e margens escuras quando necessário. O clique é convertido corretamente mesmo após redimensionamento.
+- Imagens dos personagens e sequências animadas agora preenchem a área do retrato (163×163 na arte base), usando recorte central para não deformar as pessoas. Os lados da imagem podem ser cortados para encaixar no quadrado.
+- Para trocar o personagem, mantenha os arquivos `assets/personagens/personagem1.jpg` até `personagem4.jpg`.
+- Para obter mais espaço na tela, diminua a janela pelo canto. Não precisa editar o código.

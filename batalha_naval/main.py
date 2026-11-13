@@ -1,4 +1,4 @@
-"""Batalha Naval A3 V4 — layout original da turma, seleção de personagem e 2 jogadores locais."""
+"""Batalha Naval A3 V6 — navios inteiros em pixel art, layout original da turma, seleção de personagem e 2 jogadores locais."""
 import math
 import random
 import sys
@@ -20,7 +20,7 @@ janela_inicial = (max(320, int(BASE_W * escala_inicial)),
                   max(240, int(BASE_H * escala_inicial)))
 JANELA = pygame.display.set_mode(janela_inicial, pygame.RESIZABLE)
 TELA = pygame.Surface((BASE_W, BASE_H)).convert()
-pygame.display.set_caption('Batalha Naval A3 - V5 | Janela responsiva')
+pygame.display.set_caption('Batalha Naval A3 - V6 | Navios da turma')
 RELOGIO = pygame.time.Clock()
 FONT = pygame.font.SysFont('arial', 16, bold=True)
 SMALL = pygame.font.SysFont('arial', 13)
@@ -47,9 +47,89 @@ ship_file = {
     'Cruzador': 'cruzador.png', 'Submarino': 'submarino.png',
     'Patrulha': 'patrulha.png'
 }
-ship_images = {key: imagem('navios/' + filename, (CELL - 4, CELL - 9))
-               for key, filename in ship_file.items()}
-ship_fallback = imagem('navios/navio.png', (CELL - 4, CELL - 9))
+# Carrega imagens na resolução original; cada barco é desenhado como UM sprite
+# cobrindo todas as casas correspondentes. Sem repetir a imagem por quadradinho.
+ship_images = {}
+for name, filename in ship_file.items():
+    path = ASSET_ROOT / 'navios' / filename
+    try:
+        ship_images[name] = pygame.image.load(str(path)).convert_alpha() if path.is_file() else None
+    except (pygame.error, OSError):
+        ship_images[name] = None
+
+# Cache de redimensionamentos/rotações; útil para economizar CPU a 60 FPS.
+ship_sprite_cache = {}
+
+
+def ship_geometry(ship):
+    """Rect lógico e orientação com base nas casas do próprio navio."""
+    rows = [r for r, _ in ship.casas]
+    cols = [c for _, c in ship.casas]
+    first_r, first_c = min(rows), min(cols)
+    vertical_ship = max(rows) != min(rows)
+    count = len(ship.casas)
+    if vertical_ship:
+        rect = pygame.Rect(GX + first_c * CELL + 3,
+                           GY + first_r * CELL + 2,
+                           CELL - 6, count * CELL - 4)
+    else:
+        rect = pygame.Rect(GX + first_c * CELL + 2,
+                           GY + first_r * CELL + 3,
+                           count * CELL - 4, CELL - 6)
+    return rect, vertical_ship
+
+
+def ship_sprite(ship):
+    """Desenha o barco com comprimento proporcional ao numero de casas."""
+    rect, is_vertical = ship_geometry(ship)
+    original = ship_images.get(ship.nome)
+    if original is None:
+        return None, rect
+
+    ship_len = len(ship.casas)
+
+    # Altura/largura visual do barco dentro da grade
+    thickness = int(CELL * 0.90)
+
+    if is_vertical:
+        target_size = (thickness, ship_len * CELL - 4)
+        cache_key = (ship.nome, ship_len, "V", target_size)
+    else:
+        target_size = (ship_len * CELL - 4, thickness)
+        cache_key = (ship.nome, ship_len, "H", target_size)
+
+    if cache_key not in ship_sprite_cache:
+        art = original
+
+        if is_vertical:
+            art = pygame.transform.rotate(art, 90)
+
+        # Aqui ele é redimensionado para o tamanho EXATO desejado
+        # isso deixa ele mais "esticado", ocupando corretamente as casas
+        art = pygame.transform.scale(art, target_size)
+
+        ship_sprite_cache[cache_key] = art
+
+    art = ship_sprite_cache[cache_key]
+    return art, art.get_rect(center=rect.center)
+
+
+def draw_ship(ship, sunk=False):
+    art, dest = ship_sprite(ship)
+    if art:
+        TELA.blit(art, dest)
+    else:
+        rect, _ = ship_geometry(ship)
+        pygame.draw.rect(TELA, (79, 101, 120), rect, border_radius=6)
+        pygame.draw.rect(TELA, (177, 196, 205), rect, 2, border_radius=6)
+    if sunk:
+        # Sem revelar as embarcações intactas do adversário.
+        rect, _ = ship_geometry(ship)
+        overlay = pygame.Surface(rect.size, pygame.SRCALPHA)
+        pygame.draw.rect(overlay, (200, 36, 31, 65), overlay.get_rect(), border_radius=5)
+        TELA.blit(overlay, rect.topleft)
+
+
 effect_frames = {typ: animacao('efeitos/' + typ, (70, 70))
                  for typ in ('agua', 'acertou', 'afundou')}
 reaction_frames = {n: animacao_preencher(f'personagens/personagem{n}_atingido', PORTRAIT.size)
@@ -170,34 +250,43 @@ def draw_privacy():
 
 
 def draw_grid(board, show_ships, now, target=False):
+    # 1) Água e contorno da grade (nenhuma arte de barco por célula).
     for row in range(TAMANHO):
         draw_text(chr(65 + row), GX - 22, GY + row * CELL + 7, INK, TINY)
         draw_text(row + 1, GX + row * CELL + 7, GY - 17, INK, TINY)
         for col in range(TAMANHO):
-            cell = (row, col)
             r = pygame.Rect(GX + col * CELL, GY + row * CELL, CELL, CELL)
             wav = int(7 * math.sin(now / 450 + row * .8 + col * .4))
             pygame.draw.rect(TELA, (34, 119 + wav, 188 + wav), r)
             pygame.draw.rect(TELA, (154, 215, 241), r, 1)
-            ship = board.navio_em(cell)
-            if show_ships and ship:
-                pygame.draw.rect(TELA, (78, 95, 108), r.inflate(-5, -11), border_radius=5)
-                art = ship_images.get(ship.nome) or ship_fallback
-                if art:
-                    TELA.blit(art, (r.x + 2, r.y + 4))
-            if cell in board.tiros:
-                if ship:
-                    pygame.draw.circle(TELA, RED, r.center, 10)
-                    pygame.draw.line(TELA, WHITE, (r.centerx - 4, r.centery - 4),
-                                     (r.centerx + 4, r.centery + 4), 2)
-                else:
-                    pygame.draw.circle(TELA, WHITE, r.center, 6, 2)
+
+    # 2) Um sprite inteiro por embarcação.
+    # Próprios navios: todos à vista durante posicionamento.
+    # Inimigos: visíveis apenas quando afundados (nunca revela posições intactas).
+    for ship in board.navios:
+        if show_ships or ship.afundado:
+            draw_ship(ship, sunk=(not show_ships and ship.afundado))
+
+    # 3) Acertos/erros DESENHADOS POR CIMA dos barcos.
+    for row, col in board.tiros:
+        r = pygame.Rect(GX + col * CELL, GY + row * CELL, CELL, CELL)
+        if board.navio_em((row, col)):
+            pygame.draw.circle(TELA, (90, 12, 12), r.center, 11)
+            pygame.draw.circle(TELA, RED, r.center, 8)
+            pygame.draw.line(TELA, WHITE, (r.centerx - 4, r.centery - 4),
+                             (r.centerx + 4, r.centery + 4), 2)
+            pygame.draw.line(TELA, WHITE, (r.centerx + 4, r.centery - 4),
+                             (r.centerx - 4, r.centery + 4), 2)
+        else:
+            pygame.draw.circle(TELA, WHITE, r.center, 6, 2)
+
     if target:
         mouse = logical_mouse()
         cell = grid_cell(mouse) if mouse is not None else None
         if cell:
             row, col = cell
-            pygame.draw.rect(TELA, YELLOW, (GX + col * CELL, GY + row * CELL, CELL, CELL), 3)
+            pygame.draw.rect(TELA, YELLOW,
+                             (GX + col * CELL, GY + row * CELL, CELL, CELL), 3)
 
 
 def viewport():

@@ -1,4 +1,4 @@
-# Batalha Naval A3 — V4 (Python + Pygame)
+# Batalha Naval A3 — V6 (Python + Pygame)
 
 Projeto acadêmico de Batalha Naval, **2 jogadores no mesmo computador**. Interface criada a partir da arte do monitor e dos quatro personagens fornecidos pela turma. O motor (`game.py`) continua independente da interface (`main.py`).
 
@@ -13,11 +13,13 @@ Ou abra `iniciar.bat` após instalar o Pygame. Para sair, ESC.
 
 ## Fluxo da partida
 
-1. Jogador 1 escolhe um dos quatro personagens; a tela de troca protege a escolha do próximo jogador.
-2. Jogador 2 escolhe outro personagem (não é permitido repetir).
-3. Cada jogador posiciona **cinco navios** no tabuleiro 10×10. Clique para posicionar; **R** alterna horizontal/vertical; **A** distribui automaticamente; **Enter** confirma.
-4. Na batalha, clique no mar do adversário para disparar; a tela registra acerto ou erro e **Enter** troca o jogador, exibindo antes uma tela de privacidade.
-5. Vence quem atingir todas as casas dos navios adversários. **N** reinicia a partida.
+1. **Menu principal:** JOGAR (Enter) ou SAIR (Esc).
+2. **Nomes:** cada jogador digita seu nome (Tab ou clique troca de campo; vazio = "Jogador 1/2").
+3. Cada jogador escolhe um dos quatro personagens (não é permitido repetir); a tela de troca protege a escolha.
+4. Cada jogador posiciona **cinco navios** no tabuleiro 10×10. Clique para posicionar; **R** gira; **A** distribui automaticamente; **Backspace** desfaz o último navio; **Enter** confirma. Deve existir pelo menos **uma célula vazia entre embarcações em todas as direções, inclusive na diagonal** (a prévia fica vermelha se o navio encostar em outro).
+5. Na batalha, clique no mar do adversário para disparar. **Ao acertar uma embarcação, o jogador tem direito a uma nova jogada** (Enter continua). Ao errar (água), Enter passa a vez com tela de privacidade.
+6. Efeitos: respingo na água, explosão no acerto e explosão maior no afundamento, com aviso grande na grade. Navio afundado fica marcado com **X**. Quando uma embarcação é atingida, o retrato mostra a **reação (rosto bravo)** do jogador que levou o tiro, usando `assets/personagens/personagemN_atingido/001.png`; na derrota, o perdedor também aparece com essa reação.
+7. Vence quem afundar todos os navios adversários. No fim: **R** revanche (mesmos nomes e personagens) ou **M** volta ao menu principal.
 
 ## Estrutura dos arquivos de arte
 
@@ -53,7 +55,7 @@ assets/
 ### Orientações para a turma de design
 
 - **Retratos:** JPG ou PNG funcionam; por padrão foram incorporados os quatro JPG já enviados.
-- **Navios:** PNG transparente, preferencialmente arte que funcione dentro de cada célula. A V4 ainda desenha os navios por casa; **não mostra o desenho de um barco único atravessando 2–5 células**.
+- **Navios:** PNG transparente em `assets/navios/`. Desde a V6 cada navio é desenhado **inteiro, atravessando suas 2–5 casas** (girado 90° na vertical). Artes da turma: Muito Grande = porta-aviões (5), Grande = encouraçado (4), Médio = cruzador e submarino (3), Pequeno = patrulha (2). No posicionamento aparece uma prévia transparente; no mar do adversário o navio só é revelado depois de afundado.
 - **Animações:** coloquem quadros PNG em ordem crescente (`001.png`, `002.png`, ...). A duração padrão de cada quadro é 95 ms nos tiros e 160 ms nas reações; é ajustável no código.
 - Se uma arte estiver ausente, o jogo continua usando efeitos de fallback.
 - O retrato de reação do atingido aparece **no quadrado preto** durante o resultado do ataque. Sem quadros de reação específicos, aparece o retrato normal.

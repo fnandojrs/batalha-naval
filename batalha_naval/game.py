@@ -23,10 +23,17 @@ class Tabuleiro:
         return {(linha + (i if vertical else 0), coluna + (0 if vertical else i))
                 for i in range(tamanho)}
 
+    def vizinhanca(self, casas):
+        """Casas do navio mais todas as vizinhas, inclusive nas diagonais."""
+        return {(l + dl, c + dc) for l, c in casas for dl in (-1, 0, 1) for dc in (-1, 0, 1)}
+
     def pode_posicionar(self, linha, coluna, tamanho, vertical):
         casas = self.casas_para(linha, coluna, tamanho, vertical)
-        return all(0 <= l < TAMANHO and 0 <= c < TAMANHO for l,c in casas) and not any(
-            casas & navio.casas for navio in self.navios)
+        if not all(0 <= l < TAMANHO and 0 <= c < TAMANHO for l, c in casas):
+            return False
+        # Regra 6: pelo menos uma célula vazia entre embarcações em todas as direções.
+        area = self.vizinhanca(casas)
+        return not any(area & navio.casas for navio in self.navios)
 
     def posicionar(self, nome, tamanho, linha, coluna, vertical):
         if not self.pode_posicionar(linha, coluna, tamanho, vertical):
